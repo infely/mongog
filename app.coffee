@@ -18,7 +18,7 @@ LIMIT = parseInt(program.limit) || 10
 TRUNCATE = parseInt(program.truncate) || 32
 
 makeCriteria = (r) ->
-  projection = {_id: 1}
+  projection = {}
   criteria = if r.match /^[0-9a-fA-F]{24}$/
     _id: new ObjectID r
   else if r.startsWith('{') && r.endsWith('}')
@@ -63,7 +63,7 @@ do ->
   
   if docs.length > 1
     data = [[]]
-    data[0] = _.keys projection if projection
+    data[0] = ['_id'].concat _.keys projection if projection
     _.each docs, (i) ->
       _.each _.keys(i), (j) ->
         data[0].push j if !data[0].includes j
@@ -72,10 +72,8 @@ do ->
     _.each docs, (i) ->
       line = []
       _.each data[0], (j) ->
-        return line.push '' if !i[j]
-        
         line.push if Array.isArray(i[j])
-          '[]'
+          "[#{i[j].length}]"
         else if i[j] instanceof Date
           moment(i[j]).format()
         else if typeof i[j] == 'string'
@@ -85,8 +83,11 @@ do ->
       data.push line
 
     data = table data
-    process.stdout.write _.map(data.split('\n'), (i) -> i[...process.stdout.columns]).join('\n')
-    console.log "#{docs.length}/#{count}"
+    info = "#{docs.length}/#{count}"
+    data = _.map(data.split('\n'), (i) -> i[...process.stdout.columns])
+    data.pop()
+    data[data.length - 1] = data[data.length - 1][..[data[data.length - 1].length] - info.length - 3] + info + data[data.length - 1][-2..]
+    console.log data.join('\n')
  
     client.close()
   else
