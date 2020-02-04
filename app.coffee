@@ -12,6 +12,20 @@ ObjectID      = mongodb.ObjectID
 
 args = program.parse(process.argv).args
 
+makeCriteria = (r) ->
+  if r.match /^[0-9a-fA-F]{24}$/
+    _id: new ObjectID r
+  else if r.startsWith('{') && r.endsWith('}')
+    try
+      JSON.parse r.replace /(['"])?([a-z0-9A-Z_]+)(['"])?:/g, '"$2": '
+    catch e
+      {}
+  else
+    _.fromPairs _.map r.split(','), (i) ->
+      j = i.split(':')
+      j[1] = parseInt(j[1]) if parseInt(j[1]) + '' == j[1]
+      j
+
 do ->
   client = await MongoClient.connect 'mongodb://localhost:27017', {useUnifiedTopology: true}
   
@@ -26,17 +40,13 @@ do ->
     return client.close()
 
   collection = db.collection args[1]
-  
-  query = {}
-  if args[2]
-    query = if args[2].match /^[0-9a-fA-F]{24}$/
-      _id: new ObjectID args[2]
-    else
-      JSON.parse args[2]
-  docs = await collection.find(query).limit(10).toArray()
+
+  criteria = {}
+  criteria = makeCriteria(args[2]) if args[2]
+  docs = await collection.find(criteria).limit(10).toArray()
   
   if docs.length > 1
-    count = await collection.find(query).count()
+    count = await collection.find(criteria).count()
     
     data = [_.keys docs[0]]
     _.each docs[1..], (i) ->
