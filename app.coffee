@@ -18,18 +18,25 @@ LIMIT = parseInt(program.limit) || 10
 TRUNCATE = parseInt(program.truncate) || 32
 
 makeCriteria = (r) ->
-  if r.match /^[0-9a-fA-F]{24}$/
+  projection = {_id: 1}
+  criteria = if r.match /^[0-9a-fA-F]{24}$/
     _id: new ObjectID r
   else if r.startsWith('{') && r.endsWith('}')
     try
-      JSON.parse r.replace /(['"])?([a-z0-9A-Z_]+)(['"])?:/g, '"$2": '
+      r = JSON.parse "[#{r}]".replace /(['"])?([a-z0-9A-Z_]+)(['"])?:/g, '"$2": '
+      projection = r[1] if r[1]
+      r[0]
     catch e
       {}
   else
-    _.fromPairs _.map r.split(','), (i) ->
+    _.fromPairs  _.filter _.map r.split(','), (i) ->
       j = i.split(':')
+      if !j[1]
+        projection[j[0]] = 1
+        return
       j[1] = parseInt(j[1]) if parseInt(j[1]) + '' == j[1]
       j
+  {criteria, projection}
 
 do ->
   client = await MongoClient.connect 'mongodb://localhost:27017', {useUnifiedTopology: true}
@@ -47,16 +54,21 @@ do ->
   collection = db.collection args[1]
 
   criteria = {}
-  criteria = makeCriteria(args[2]) if args[2]
-  docs = await collection.find(criteria).limit(LIMIT).toArray()
+  if args[2]
+    {criteria, projection} = makeCriteria(args[2])
+  count = await collection.find(criteria).count()
+  options = limit: LIMIT
+  options.projection = projection if projection && count > 1
+  docs = await collection.find(criteria, options).toArray()
   
   if docs.length > 1
-    count = await collection.find(criteria).count()
-    
-    data = [_.keys docs[0]]
-    _.each docs[1..], (i) ->
+    data = [[]]
+    data[0] = _.keys projection if projection
+    _.each docs, (i) ->
       _.each _.keys(i), (j) ->
         data[0].push j if !data[0].includes j
+    if (index = data[0].indexOf('__v')) != -1
+      data[0].push(data[0].splice(index, 1))
     _.each docs, (i) ->
       line = []
       _.each data[0], (j) ->
