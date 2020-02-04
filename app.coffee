@@ -10,7 +10,12 @@ table         = require('table').table
 MongoClient   = mongodb.MongoClient
 ObjectID      = mongodb.ObjectID
 
+program
+  .option('-l, --limit <number>', 'limit rows')
+  .option('-t, --truncate <number>', 'truncate strings')
 args = program.parse(process.argv).args
+LIMIT = parseInt(program.limit) || 10
+TRUNCATE = parseInt(program.truncate) || 32
 
 makeCriteria = (r) ->
   if r.match /^[0-9a-fA-F]{24}$/
@@ -43,7 +48,7 @@ do ->
 
   criteria = {}
   criteria = makeCriteria(args[2]) if args[2]
-  docs = await collection.find(criteria).limit(10).toArray()
+  docs = await collection.find(criteria).limit(LIMIT).toArray()
   
   if docs.length > 1
     count = await collection.find(criteria).count()
@@ -61,7 +66,10 @@ do ->
           '[]'
         else if i[j] instanceof Date
           moment(i[j]).format()
-        else i[j]
+        else if typeof i[j] == 'string'
+          i[j].replace(/[\n\r\t]/g, '')[...TRUNCATE]
+        else
+          i[j]
       data.push line
 
     data = table data
