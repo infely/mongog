@@ -14,9 +14,16 @@ program
   .option('-s, --sort <string>', 'sort order')
   .option('-l, --limit <number>', 'limit rows')
   .option('-t, --truncate <number>', 'truncate strings')
+  .option('-c, --create <string>', 'create collection')
+  .option('-i, --insert', 'insert document')
+  .option('-d, --delete', 'delete document')
 args = program.parse(process.argv).args
+SORT = program.sort
 LIMIT = parseInt(program.limit) || 10
 TRUNCATE = parseInt(program.truncate) || 32
+CREATE = program.create
+INSERT = program.insert
+DELETE = program.delete
 
 makeCriteriaAndProjection = (r) ->
   projection = {}
@@ -54,6 +61,40 @@ makeSort = (r) ->
       j[1] = parseInt(j[1]) || 1
       j
 
+makeTableHeader = (docs, projection) ->
+  header = []
+  header = ['_id'].concat _.keys projection if projection
+  _.each docs, (i) ->
+    _.each _.keys(i), (j) ->
+      header.push j if !header.includes j
+  header.push(header.splice(index, 1)) if (index = header.indexOf('__v')) != -1
+  header
+
+makeTableBody = (docs, header) ->
+  body = []
+  _.each docs, (i) ->
+    line = []
+    _.each header, (j) ->
+      line.push switch true
+        when i[j] instanceof ObjectID then i[j]
+        when i[j] instanceof Date then moment(i[j]).format()
+        when i[j] instanceof String then i[j].replace(/[\n\r\t]/g, '')[...TRUNCATE]
+        when i[j] instanceof Array then "[#{i[j].length}]"
+        when i[j] instanceof Object then "{#{_.keys(i[j]).length}}"
+        else i[j]
+    body.push line
+  body
+
+makeTable = (docs, projection, count) ->
+  header = makeTableHeader docs, projection
+  body = makeTableBody docs, header
+  data = table [header].concat body
+  info = "#{docs.length}/#{count}"
+  data = _.map(data.split('\n'), (i) -> i[...process.stdout.columns])
+  data.pop()
+  data[data.length - 1] = data[data.length - 1][..[data[data.length - 1].length] - info.length - 3] + info + data[data.length - 1][-2..]
+  data.join('\n')
+
 do ->
   client = await MongoClient.connect 'mongodb://localhost:27017', {useUnifiedTopology: true}
   
@@ -64,7 +105,11 @@ do ->
   db = client.db args[0]
   
   if !args[1]
-    console.log _.map(await db.listCollections().toArray(), 'name').join('\n')
+    if CREATE
+      await db.createCollection(CREATE)
+      console.log 'collection created'
+    else
+      console.log _.map(await db.listCollections().toArray(), 'name').join('\n')
     return client.close()
 
   collection = db.collection args[1]
@@ -76,52 +121,54 @@ do ->
   options = limit: LIMIT
   options.projection = projection if projection && count > 1
   sort = {}
-  sort = makeSort(program.sort) if program.sort
+  sort = makeSort(SORT) if program.sort
   docs = await collection.find(criteria, options).sort(sort).toArray()
   
-  if docs.length > 1
-    data = [[]]
-    data[0] = ['_id'].concat _.keys projection if projection
-    _.each docs, (i) ->
-      _.each _.keys(i), (j) ->
-        data[0].push j if !data[0].includes j
-    if (index = data[0].indexOf('__v')) != -1
-      data[0].push(data[0].splice(index, 1))
-    _.each docs, (i) ->
-      line = []
-      _.each data[0], (j) ->
-        line.push switch true
-          when i[j] instanceof ObjectID then i[j]
-          when i[j] instanceof Date then moment(i[j]).format()
-          when i[j] instanceof String then i[j].replace(/[\n\r\t]/g, '')[...TRUNCATE]
-          when i[j] instanceof Array then "[#{i[j].length}]"
-          when i[j] instanceof Object then "{#{_.keys(i[j]).length}}"
-          else i[j]
-      data.push line
+  if INSERT
+    doc = _.filter(_.map(makeTableHeader(docs, projection), (i) -> i != '_id' && !i.startsWith('__') && i))
+    docs = [_.fromPairs(_.map(doc, (i) -> [i, '']))]
 
-    data = table data
-    info = "#{docs.length}/#{count}"
-    data = _.map(data.split('\n'), (i) -> i[...process.stdout.columns])
-    data.pop()
-    data[data.length - 1] = data[data.length - 1][..[data[data.length - 1].length] - info.length - 3] + info + data[data.length - 1][-2..]
-    console.log data.join('\n')
+  if docs.length > 1
+    console.log makeTable docs, projection, count
  
     client.close()
-  else
-    return client.close() if !docs[0]
-    fs.writeFileSync '/tmp/mongog.json', JSON.stringify docs[0], null, 2
-    child = child_process.spawn 'vi', ['/tmp/mongog.json'], stdio: 'inherit'
+
+  else if docs.length == 1
+    doc = docs[0]
+
+    doc = Object.assign {__: 'SAVE THIS FILE TO DELETE'}, docs[0] if DELETE
+
+    fs.writeFileSync '/tmp/mongog.json', JSON.stringify doc, null, 2
+    mtime = (fs.statSync('/tmp/mongog.json')).mtimeMs
     
-    child.on 'exit', (err, code) ->
-      stat = fs.statSync '/tmp/mongog.json'
-      if stat.mtimeMs != stat.ctimeMs
-        doc = JSON.parse fs.readFileSync '/tmp/mongog.json', 'utf8'
+    childExit = (err, code) ->
+      mtime_new = (fs.statSync('/tmp/mongog.json')).mtimeMs
 
-        if !doc._id
-          await collection.insertOne doc
-        else
-          _id = new ObjectID doc._id
-          delete doc._id
-          await collection.updateOne {_id}, {$set: doc}
+      if mtime != mtime_new
+        mtime = mtime_new
+        try
+          doc = JSON.parse fs.readFileSync '/tmp/mongog.json', 'utf8'
+          if !doc._id
+            await collection.insertOne doc
+            console.log 'document inserted'
+          else
+            _id = new ObjectID doc._id
+            if DELETE
+              await collection.deleteOne {_id}
+              console.log 'document deleted'
+            else
+              delete doc._id
+              await collection.updateOne {_id}, {$set: doc}
+              console.log 'document updated'
+          client.close()
+        catch
+          child = child_process.spawn 'vi', ['/tmp/mongog.json'], stdio: 'inherit'
+          child.on 'exit', childExit
+      else
+        client.close()
 
-      client.close()
+    child = child_process.spawn 'vi', ['/tmp/mongog.json'], stdio: 'inherit'
+    child.on 'exit', childExit
+
+  else
+    client.close()
