@@ -9,6 +9,7 @@ mongodb       = require('mongodb')
 table         = require('table').table
 chalk         = require('chalk')
 sliceAnsi     = require('slice-ansi')
+EJSON         = require('bson').EJSON
 MongoClient   = mongodb.MongoClient
 ObjectID      = mongodb.ObjectID
 
@@ -141,7 +142,7 @@ do ->
 
     doc = Object.assign {__: 'SAVE THIS FILE TO DELETE'}, docs[0] if DELETE
 
-    fs.writeFileSync '/tmp/mongog.json', JSON.stringify doc, null, 2
+    fs.writeFileSync '/tmp/mongog.json', EJSON.stringify doc, null, 2
     mtime = (fs.statSync('/tmp/mongog.json')).mtimeMs
     
     childExit = (err, code) ->
@@ -150,7 +151,7 @@ do ->
       if mtime != mtime_new
         mtime = mtime_new
         try
-          doc = JSON.parse fs.readFileSync '/tmp/mongog.json', 'utf8'
+          doc = EJSON.parse fs.readFileSync '/tmp/mongog.json', 'utf8'
           if !doc._id
             await collection.insertOne doc
             console.log 'document inserted'
