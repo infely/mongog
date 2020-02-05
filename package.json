@@ -1,10 +1,13 @@
 {
   "name": "mongog",
-  "version": "0.0.10",
+  "version": "0.1.0",
   "description": "",
   "main": "app.coffee",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "prepublish": "coffee --bare -co bin app.coffee"
+  },
+  "bin": {
+    "mongog": "./bin/index.js"
   },
   "author": "",
   "license": "ISC",
