@@ -90,14 +90,13 @@ do ->
     _.each docs, (i) ->
       line = []
       _.each data[0], (j) ->
-        line.push if Array.isArray(i[j])
-          "[#{i[j].length}]"
-        else if i[j] instanceof Date
-          moment(i[j]).format()
-        else if typeof i[j] == 'string'
-          i[j].replace(/[\n\r\t]/g, '')[...TRUNCATE]
-        else
-          i[j]
+        line.push switch true
+          when i[j] instanceof ObjectID then i[j]
+          when i[j] instanceof Date then moment(i[j]).format()
+          when i[j] instanceof String then i[j].replace(/[\n\r\t]/g, '')[...TRUNCATE]
+          when i[j] instanceof Array then "[#{i[j].length}]"
+          when i[j] instanceof Object then "{#{_.keys(i[j]).length}}"
+          else i[j]
       data.push line
 
     data = table data
