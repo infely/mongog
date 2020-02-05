@@ -72,7 +72,7 @@ makeTableHeader = (docs, projection) ->
   _.each docs, (i) ->
     _.each _.keys(i), (j) ->
       header.push j if !header.includes j
-  header.push(header.splice(index, 1)) if (index = header.indexOf('__v')) != -1
+  header.push(header.splice(index, 1)[0]) if (index = header.indexOf('__v')) != -1
   header
 
 makeTableBody = (docs, header) ->
