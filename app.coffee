@@ -13,6 +13,8 @@ EJSON         = require('bson').EJSON
 MongoClient   = mongodb.MongoClient
 ObjectID      = mongodb.ObjectID
 
+EDITOR = process.env['EDITOR'] || 'vi'
+
 program
   .option('-s, --sort <string>', 'sort order')
   .option('-l, --limit <number>', 'limit rows')
@@ -166,12 +168,12 @@ do ->
               console.log 'document updated'
           client.close()
         catch
-          child = child_process.spawn 'vi', ['/tmp/mongog.json'], stdio: 'inherit'
+          child = child_process.spawn EDITOR, ['/tmp/mongog.json'], stdio: 'inherit'
           child.on 'exit', childExit
       else
         client.close()
 
-    child = child_process.spawn 'vi', ['/tmp/mongog.json'], stdio: 'inherit'
+    child = child_process.spawn EDITOR, ['/tmp/mongog.json'], stdio: 'inherit'
     child.on 'exit', childExit
 
   else
