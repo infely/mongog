@@ -7,6 +7,8 @@ _             = require('lodash')
 moment        = require('moment')
 mongodb       = require('mongodb')
 table         = require('table').table
+chalk         = require('chalk')
+sliceAnsi     = require('slice-ansi')
 MongoClient   = mongodb.MongoClient
 ObjectID      = mongodb.ObjectID
 
@@ -76,11 +78,12 @@ makeTableBody = (docs, header) ->
     line = []
     _.each header, (j) ->
       line.push switch true
-        when i[j] instanceof ObjectID then i[j]
-        when i[j] instanceof Date then moment(i[j]).format()
-        when i[j] instanceof String then i[j].replace(/[\n\r\t]/g, '')[...TRUNCATE]
-        when i[j] instanceof Array then "[#{i[j].length}]"
-        when i[j] instanceof Object then "{#{_.keys(i[j]).length}}"
+        when i[j] instanceof ObjectID then chalk.red i[j]
+        when i[j] instanceof Date then chalk.green moment(i[j]).format()
+        when typeof i[j] == 'number' then chalk.green i[j]
+        when typeof i[j] == 'string' then chalk.magenta i[j].replace(/[\n\r\t]/g, '')[...TRUNCATE]
+        when i[j] instanceof Array then chalk.cyan "[#{i[j].length}]"
+        when i[j] instanceof Object then chalk.cyan "{#{_.keys(i[j]).length}}"
         else i[j]
     body.push line
   body
@@ -90,7 +93,7 @@ makeTable = (docs, projection, count) ->
   body = makeTableBody docs, header
   data = table [header].concat body
   info = "#{docs.length}/#{count}"
-  data = _.map(data.split('\n'), (i) -> i[...process.stdout.columns])
+  data = _.map(data.split('\n'), (i) -> sliceAnsi(i, 0, process.stdout.columns))
   data.pop()
   data[data.length - 1] = data[data.length - 1][..[data[data.length - 1].length] - info.length - 3] + info + data[data.length - 1][-2..]
   data.join('\n')

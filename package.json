@@ -1,6 +1,6 @@
 {
   "name": "mongog",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "",
   "main": "app.coffee",
   "scripts": {
@@ -9,10 +9,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "chalk": "^3.0.0",
     "commander": "^4.1.1",
     "lodash": "^4.17.15",
     "moment": "^2.24.0",
     "mongodb": "^3.5.2",
+    "slice-ansi": "^3.0.0",
     "table": "^5.4.6"
   }
 }
