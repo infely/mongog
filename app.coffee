@@ -16,6 +16,8 @@ ObjectID      = mongodb.ObjectID
 EDITOR = process.env['EDITOR'] || 'vi'
 
 program
+  .option('-h, --host <string>', 'host')
+  .option('-p, --port <number>', 'port')
   .option('-s, --sort <string>', 'sort order')
   .option('-l, --limit <number>', 'limit rows')
   .option('-t, --truncate <number>', 'truncate strings')
@@ -23,6 +25,8 @@ program
   .option('-i, --insert', 'insert document')
   .option('-d, --delete', 'delete document')
 args = program.parse(process.argv).args
+HOST = program.host || 'localhost'
+PORT = program.port || 27017
 SORT = program.sort
 LIMIT = parseInt(program.limit) || 10
 TRUNCATE = parseInt(program.truncate) || 32
@@ -102,7 +106,7 @@ makeTable = (docs, projection, count) ->
   data.join('\n')
 
 do ->
-  client = await MongoClient.connect 'mongodb://localhost:27017', {useUnifiedTopology: true}
+  client = await MongoClient.connect "mongodb://#{HOST}:#{PORT}", {useUnifiedTopology: true}
   
   if !args[0]
     console.log _.map((await client.db('admin').admin().listDatabases()).databases, 'name').join('\n')
