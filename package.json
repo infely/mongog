@@ -1,7 +1,15 @@
 {
   "name": "mongog",
-  "version": "0.1.3",
-  "description": "",
+  "version": "0.1.4",
+  "description": "MongoDB CLI management tool",
+  "keywords": [
+    "mongodb",
+    "cli",
+    "gui",
+    "tool"
+  ],
+  "author": "infely",
+  "license": "ISC",
   "main": "app.coffee",
   "scripts": {
     "prepublish": "coffee --bare -co bin app.coffee"
@@ -9,8 +17,6 @@
   "bin": {
     "mongog": "./bin/index.js"
   },
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "bson": "^4.0.3",
     "chalk": "^3.0.0",
