@@ -1,6 +1,6 @@
 {
   "name": "mongog",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "MongoDB CLI management tool",
   "keywords": [
     "mongodb",
@@ -8,8 +8,16 @@
     "gui",
     "tool"
   ],
-  "author": "infely",
+  "author": {
+    "name": "infely",
+    "email": "infely@gmail.com",
+    "url": "https://github.com/infely"
+  },
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/infely/mongog.git"
+  },
   "main": "app.coffee",
   "scripts": {
     "prepublish": "coffee --bare -co bin app.coffee"
