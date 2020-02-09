@@ -16,9 +16,9 @@ ObjectID      = mongodb.ObjectID
 EDITOR = process.env['EDITOR'] || 'vi'
 
 program
-  .option('-h, --host <string>', 'host')
-  .option('-p, --port <number>', 'port')
-  .option('-s, --sort <string>', 'sort order')
+  .option('-h, --host <ip|domain>', 'host')
+  .option('-p, --port <port>', 'port')
+  .option('-s, --sort <string|object|order>', 'sort order')
   .option('-l, --limit <number>', 'limit rows')
   .option('-t, --truncate <number>', 'truncate strings')
   .option('-c, --create <string>', 'create collection')
