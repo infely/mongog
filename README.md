@@ -9,6 +9,12 @@ MongoDB CLI management tool
 ```sh
 $ mongog db [collection [query[,projection]]]
 ```
+### Example
+```
+$ mongog test friends
+$ mongog test friends '{char: "Ross Geller"}'
+$ mongog test friends char:/geller/i
+```
 
 ## -h, --host <ip|domain>
 Host
@@ -38,36 +44,35 @@ $ mongog test friends -s -1
 Limit rows
 ### Example
 ```sh
-mongog test friends -l 5
+$ mongog test friends -l 5
 ```
 
 ## -t, --truncate <number>
 Truncate strings
 ### Example
 ```sh
-mongog test friends -t 16
+$ mongog test friends -t 16
 ```
 
 ## -c, --create <string>
 Create collection
 ### Example
 ```sh
-mongog test -c friends
+$ mongog test -c friends
 ```
 
 ## -i, --insert
 Insert document
 ### Example
 ```sh
-mongog test friends -i
+$ mongog test friends -i
 ```
 
 ## -d, --delete
 Delete document
 ### Example
 ```sh
-mongog test friends '{char: "Ross Geller"}' -d
-mongog test friends char:/geller/i
-mongog test friends _id:5e400e74a5f94d4a974077be -d
-mongog test friends 5e400e74a5f94d4a974077be -d
+$ mongog test friends '{char: "Ross Geller"}' -d
+$ mongog test friends _id:5e400e74a5f94d4a974077be -d
+$ mongog test friends 5e400e74a5f94d4a974077be -d
 ```
