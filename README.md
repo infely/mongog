@@ -67,6 +67,7 @@ Delete document
 ### Example
 ```sh
 mongog test friends '{char: "Ross Geller"}' -d
+mongog test friends char:/geller/i
 mongog test friends _id:5e400e74a5f94d4a974077be -d
 mongog test friends 5e400e74a5f94d4a974077be -d
 ```

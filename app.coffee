@@ -52,6 +52,8 @@ makeCriteriaAndProjection = (r) ->
         projection[j[0]] = 1
         return
       j[1] = parseInt(j[1]) if parseInt(j[1]) + '' == j[1]
+      if j[1].startsWith('/') && (j[1].endsWith('/') || matches = j[1].match(/\/([imxs]*)$/))
+        j[1] = $regex: new RegExp(j[1].match(/\/(.*)\//, '')[1], matches?[1])
       j
   {criteria, projection}
 
@@ -107,13 +109,13 @@ makeTable = (docs, projection, count) ->
 
 do ->
   client = await MongoClient.connect "mongodb://#{HOST}:#{PORT}", {useUnifiedTopology: true}
-  
+
   if !args[0]
     console.log _.map((await client.db('admin').admin().listDatabases()).databases, 'name').join('\n')
     return client.close()
 
   db = client.db args[0]
-  
+
   if !args[1]
     if CREATE
       await db.createCollection(CREATE)
@@ -133,14 +135,14 @@ do ->
   sort = {}
   sort = makeSort(SORT) if program.sort
   docs = await collection.find(criteria, options).sort(sort).toArray()
-  
+
   if INSERT
     doc = _.filter(_.map(makeTableHeader(docs, projection), (i) -> i != '_id' && !i.startsWith('__') && i))
     docs = [_.fromPairs(_.map(doc, (i) -> [i, '']))]
 
   if docs.length > 1
     console.log makeTable docs, projection, count
- 
+
     client.close()
 
   else if docs.length == 1
@@ -150,7 +152,7 @@ do ->
 
     fs.writeFileSync '/tmp/mongog.json', EJSON.stringify doc, null, 2
     mtime = (fs.statSync('/tmp/mongog.json')).mtimeMs
-    
+
     childExit = (err, code) ->
       mtime_new = (fs.statSync('/tmp/mongog.json')).mtimeMs
 
