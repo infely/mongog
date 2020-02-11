@@ -24,23 +24,25 @@ program
   .option('-c, --create <string>', 'create collection')
   .option('-i, --insert', 'insert document')
   .option('-d, --delete', 'delete document')
+  .option('--force', 'force delete multiple documents')
 args = program.parse(process.argv).args
 HOST = program.host || 'localhost'
 PORT = program.port || 27017
 SORT = program.sort
-LIMIT = parseInt(program.limit) || 10
-TRUNCATE = parseInt(program.truncate) || 32
+LIMIT = if !isNaN(LIMIT = parseInt(program.limit)) then LIMIT else 10
+TRUNCATE = parseInt(program.truncate) || 24
 CREATE = program.create
 INSERT = program.insert
 DELETE = program.delete
+FORCE = program.force
 
 makeCriteriaAndProjection = (r) ->
   projection = {}
-  criteria = if r.match /^[0-9a-fA-F]{24}$/
+  criteria = if r.match /^[0-9A-Fa-f]{24}$/
     _id: new ObjectID r
   else if r.startsWith('{') && r.endsWith('}')
     try
-      r = JSON.parse "[#{r}]".replace /(['"])?([a-z0-9A-Z_]+)(['"])?:/g, '"$2": '
+      r = JSON.parse "[#{r}]".replace /(['"])?([0-9A-Za-z_]+)(['"])?:/g, '"$2": '
       projection = r[1] if r[1]
       r[0]
     catch e
@@ -51,9 +53,11 @@ makeCriteriaAndProjection = (r) ->
       if !j[1]
         projection[j[0]] = 1
         return
-      j[1] = parseInt(j[1]) if parseInt(j[1]) + '' == j[1]
-      if j[1].startsWith('/') && (j[1].endsWith('/') || matches = j[1].match(/\/([imxs]*)$/))
-        j[1] = $regex: new RegExp(j[1].match(/\/(.*)\//, '')[1], matches?[1])
+      switch true
+        when parseInt(j[1]).toString() == j[1] then j[1] = parseInt(j[1])
+        when !!j[1].match(/^[0-9A-Fa-f]{24}$/) then j[1] = ObjectID(j[1])
+        when j[1].startsWith('/') && (j[1].endsWith('/') || matches = j[1].match(/\/([imxs]*)$/))
+          j[1] = $regex: new RegExp(j[1].match(/\/(.*)\//, '')[1], matches?[1])
       j
   {criteria, projection}
 
@@ -62,13 +66,12 @@ makeSort = (r) ->
     _id: -1
   else if r.startsWith('{') && r.endsWith('}')
     try
-      JSON.parse r.replace /(['"])?([a-z0-9A-Z_]+)(['"])?:/g, '"$2": '
+      JSON.parse r.replace /(['"])?([0-9A-Za-z_]+)(['"])?:/g, '"$2": '
     catch e
       {}
   else
     _.fromPairs _.filter _.map r.split(','), (i) ->
       j = i.split(':')
-      return if !j[1]
       j[1] = parseInt(j[1]) || 1
       j
 
@@ -127,8 +130,7 @@ do ->
   collection = db.collection args[1]
 
   criteria = {}
-  if args[2]
-    {criteria, projection} = makeCriteriaAndProjection(args[2])
+  {criteria, projection} = makeCriteriaAndProjection(args[2]) if args[2]
   count = await collection.find(criteria).count()
   options = limit: LIMIT
   options.projection = projection if projection && count > 1
@@ -141,7 +143,14 @@ do ->
     docs = [_.fromPairs(_.map(doc, (i) -> [i, '']))]
 
   if docs.length > 1
-    console.log makeTable docs, projection, count
+    if DELETE
+      if FORCE
+        await collection.deleteMany _id: $in: _.map docs, '_id'
+        console.log "#{docs.length} documents deleted"
+      else
+        console.log 'use --force to delete multiple documents'
+    else
+      console.log makeTable docs, projection, count
 
     client.close()
 

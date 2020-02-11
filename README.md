@@ -10,7 +10,7 @@ MongoDB CLI management tool
 $ mongog db [collection [query[,projection]]]
 ```
 ### Example
-```
+```sh
 $ mongog test friends
 $ mongog test friends '{char: "Ross Geller"}'
 $ mongog test friends char:/geller/i
@@ -36,6 +36,7 @@ Sort order
 ### Example
 ```sh
 $ mongog test friends -s last_name:1,first_name:1
+$ mongog test friends -s char
 $ mongog test friends -s '{_id: -1}'
 $ mongog test friends -s -1
 ```
@@ -45,6 +46,7 @@ Limit rows
 ### Example
 ```sh
 $ mongog test friends -l 5
+$ mongog test friends -l 0
 ```
 
 ## -t, --truncate <number>
@@ -75,4 +77,11 @@ Delete document
 $ mongog test friends '{char: "Ross Geller"}' -d
 $ mongog test friends _id:5e400e74a5f94d4a974077be -d
 $ mongog test friends 5e400e74a5f94d4a974077be -d
+```
+
+## -d --force
+Force delete multiple documents
+### Example
+```sh
+$ mongog test friends char:/geller/i -d --force
 ```
