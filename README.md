@@ -1,6 +1,9 @@
-[![asciicast](https://asciinema.org/a/ELWz7L0eNXrn5GZIWfPVFiHb1.svg)](https://asciinema.org/a/ELWz7L0eNXrn5GZIWfPVFiHb1)
+## THIS PROJECT IS NO LONGER BEING MAINTAINED.
+### You may want to look at [`mngr`](https://github.com/infely/mngr) as a better alternative to this project.
+<p align="center"><img src="https://raw.githubusercontent.com/infely/mngr/master/img/mngr.gif" width="576" alt="mngr"></p>
 
 # mongog
+[![asciicast](https://asciinema.org/a/ELWz7L0eNXrn5GZIWfPVFiHb1.svg)](https://asciinema.org/a/ELWz7L0eNXrn5GZIWfPVFiHb1)
 MongoDB CLI management tool
 - View your collections as tables
 - Edit your documents as JSON in editor
